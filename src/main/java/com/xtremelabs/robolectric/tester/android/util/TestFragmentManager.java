@@ -187,7 +187,9 @@ public class TestFragmentManager extends FragmentManager {
         transactions.add(t);
         if (t.isStarting()) {
             addFragment(t.getContainerViewId(), t.getTag(), t.getFragment(), t.isReplacing());
-            startFragment(t.getFragment());
+
+            // Causing double addition of fragments
+            //startFragment(t.getFragment());
         }
         if (t.isRemoving()) {
             Fragment fragment = t.getFragmentToRemove();
