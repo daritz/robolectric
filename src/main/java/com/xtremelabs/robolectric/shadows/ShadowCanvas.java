@@ -22,12 +22,15 @@ import static com.xtremelabs.robolectric.Robolectric.shadowOf;
 public class ShadowCanvas {
     private List<PathPaintHistoryEvent> pathPaintEvents = new ArrayList<PathPaintHistoryEvent>();
     private List<CirclePaintHistoryEvent> circlePaintEvents = new ArrayList<CirclePaintHistoryEvent>();
+    private List<TextHistoryEvent> drawnTextEventHistory = new ArrayList<TextHistoryEvent>();
     private Paint drawnPaint;
     private Bitmap targetBitmap = newInstanceOf(Bitmap.class);
     private float translateX;
     private float translateY;
     private float scaleX = 1;
     private float scaleY = 1;
+    private int height;
+    private int width;
 
     public void __constructor__(Bitmap bitmap) {
         this.targetBitmap = bitmap;
@@ -39,6 +42,11 @@ public class ShadowCanvas {
 
     public String getDescription() {
         return shadowOf(targetBitmap).getDescription();
+    }
+
+    @Implementation
+    public void drawText(String text, float x, float y, Paint paint) {
+        drawnTextEventHistory.add(new TextHistoryEvent(x, y, paint, text));
     }
 
     @Implementation
@@ -86,7 +94,7 @@ public class ShadowCanvas {
 
     @Implementation
     public void drawPath(Path path, Paint paint) {
-        pathPaintEvents.add(new PathPaintHistoryEvent(path, paint));
+        pathPaintEvents.add(new PathPaintHistoryEvent(new Path(path), paint));
 
         separateLines();
         appendDescription("Path " + shadowOf(path).getPoints().toString());
@@ -147,12 +155,40 @@ public class ShadowCanvas {
     }
 
     public void resetCanvasHistory() {
+        drawnTextEventHistory.clear();
         pathPaintEvents.clear();
         circlePaintEvents.clear();
+        shadowOf(targetBitmap).setDescription("");
     }
 
     public Paint getDrawnPaint() {
         return drawnPaint;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    @Implementation
+    public int getWidth() {
+        return width;
+    }
+
+    @Implementation
+    public int getHeight() {
+        return height;
+    }
+
+    public TextHistoryEvent getDrawnTextEvent(int i) {
+        return drawnTextEventHistory.get(i);
+    }
+
+    public int getTextHistoryCount() {
+        return drawnTextEventHistory.size();
     }
 
     private static class PathPaintHistoryEvent {
@@ -176,6 +212,20 @@ public class ShadowCanvas {
             this.centerX = centerX;
             this.centerY = centerY;
             this.radius = radius;
+        }
+    }
+
+    public static class TextHistoryEvent {
+        public float x;
+        public float y;
+        public Paint paint;
+        public String text;
+
+        private TextHistoryEvent(float x, float y, Paint paint, String text) {
+            this.x = x;
+            this.y = y;
+            this.paint = paint;
+            this.text = text;
         }
     }
 }

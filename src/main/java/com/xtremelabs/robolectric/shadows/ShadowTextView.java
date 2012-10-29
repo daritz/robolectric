@@ -3,6 +3,7 @@ package com.xtremelabs.robolectric.shadows;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.text.InputFilter;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
@@ -18,6 +19,7 @@ import android.widget.TextView;
 import com.xtremelabs.robolectric.internal.Implementation;
 import com.xtremelabs.robolectric.internal.Implements;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +38,7 @@ public class ShadowTextView extends ShadowView {
     private boolean autoLinkPhoneNumbers;
     private int autoLinkMask;
     private CharSequence hintText;
+    private CharSequence errorText;
     private int compoundDrawablePadding;
     private MovementMethod movementMethod;
     private boolean linksClickable;
@@ -45,9 +48,10 @@ public class ShadowTextView extends ShadowView {
     private int textAppearanceId;
     private TransformationMethod transformationMethod;
     private int inputType;
-    protected int selectionStart = 0;
-    protected int selectionEnd = 0;
+    protected int selectionStart = -1;
+    protected int selectionEnd = -1;
     private Typeface typeface;
+    private InputFilter[] inputFilters;
 
     private List<TextWatcher> watchers = new ArrayList<TextWatcher>();
     private List<Integer> previousKeyCodes = new ArrayList<Integer>();
@@ -333,6 +337,16 @@ public class ShadowTextView extends ShadowView {
     public String innerText() {
         return (text == null || getVisibility() != VISIBLE) ? "" : text.toString();
     }
+    
+    @Implementation
+    public void setError(CharSequence error) {
+      errorText = error;
+    }
+    
+    @Implementation
+    public CharSequence getError() {
+      return errorText;
+    }
 
     @Override
     @Implementation
@@ -494,6 +508,21 @@ public class ShadowTextView extends ShadowView {
     }
 
     @Implementation
+    public void setFilters(InputFilter[] inputFilters) {
+        this.inputFilters = inputFilters;
+    }
+
+    @Implementation
+    public InputFilter[] getFilters() {
+        return this.inputFilters;
+    }
+
+    @Implementation
+    public boolean hasSelection() {
+        return selectionStart >= 0 && selectionEnd >= 0;
+    }
+
+    @Implementation
     public boolean onTouchEvent(MotionEvent event) {
         boolean superResult = super.onTouchEvent(event);
 
@@ -517,6 +546,15 @@ public class ShadowTextView extends ShadowView {
 
     public void setLayout(Layout layout) {
         this.layout = layout;
+    }
+
+    @Override
+    protected void dumpAttributes(PrintStream out) {
+        super.dumpAttributes(out);
+        CharSequence text = getText();
+        if (text != null && text.length() > 0) {
+            dumpAttribute(out, "text", text.toString());
+        }
     }
 
     public static class CompoundDrawables {
